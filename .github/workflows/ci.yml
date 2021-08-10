@@ -4,13 +4,15 @@ name: Quarkus Codestart CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
     branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MVN: mvn --show-version --batch-mode
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
@@ -18,4 +20,6 @@ jobs:
         with:
           java-version: 11
       - name: Build
-        run: ./mvnw verify -B
+        run: $MVN clean compile
+      - name: Test
+        run: $MVN test  
