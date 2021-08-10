@@ -22,4 +22,6 @@ jobs:
       - name: Build
         run: $MVN clean compile
       - name: Test
-        run: $MVN test  
+        run: $MVN test
+      - name: Native Compile
+        run: $MVN package -Pnative  
