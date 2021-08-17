@@ -1,4 +1,4 @@
-# Quarkus Sample Project covoering some build options
+# Quarkus Sample Project covering some build options
 ## Github Actions
 
 In /.github/workflows/ci.yml you will find a sample Github actions Pipeline building images of the app   
