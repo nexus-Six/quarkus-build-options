@@ -1,0 +1,89 @@
+apiVersion: 1.0.0
+metadata:
+  name: build-options-quarkus65x59
+projects:
+  - name: build-options-quarkus
+    source:
+      location: 'https://github.com/nexus-Six/quarkus-build-options.git'
+      type: git
+components:
+  - id: redhat/quarkus-java11/latest
+    type: chePlugin
+  - id: redhat/vscode-openshift-connector/latest
+    type: chePlugin
+    alias: vscode-openshift
+  - mountSources: true
+    endpoints:
+      - name: quarkus-development-server
+        port: 8080
+      - attributes:
+          path: /
+        name: robot-control-page
+        port: 8080
+      - attributes:
+          public: 'false'
+        name: debug
+        port: 5005
+      - attributes:
+          public: 'false'
+        name: tests
+        port: 8081
+    memoryLimit: 512Mi
+    type: dockerimage
+    volumes:
+      - name: m2
+        containerPath: /home/jboss/.m2
+    alias: maven
+    image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8
+    env:
+      - value: '-XX:MaxRAMPercentage=50.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xms20m -Djava.security.egd=file:/dev/./urandom -Duser.home=/home/jboss'
+        name: JAVA_OPTS
+      - value: $(JAVA_OPTS)
+        name: MAVEN_OPTS
+  - id: redhat/vscode-xml/latest
+    type: chePlugin
+  - id: redhat/vscode-yaml/latest
+    type: chePlugin
+  - id: redhat/java/latest
+    type: chePlugin
+commands:
+  - name: 1. Package the application
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}/build-options-quarkus'
+        type: exec
+        command: mvn package
+        component: maven
+  - name: 2. Start Quarkus in devmode (hot deploy + debug)
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}/build-options-quarkus'
+        type: exec
+        command: 'mvn compile quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.live-reload.instrumentation=false'
+        component: maven
+  - name: Attach remote debugger
+    actions:
+      - referenceContent: |
+          {
+            "version": "0.2.0",
+            "configurations": [
+              {
+                "type": "java",
+                "request": "attach",
+                "name": "Attach to Remote Quarkus App",
+                "hostName": "localhost",
+                "port": 5005
+              }
+            ]
+          }
+        type: vscode-launch
+  - name: install odo
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}/build-options-quarkus'
+        type: exec
+        command: 'rm odo; curl https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64.tar.gz -s | tar zxv && chmod 755 odo'
+        component: maven
+  - name: install oc
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}/build-options-quarkus'
+        type: exec
+        command: 'rm oc; curl https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz -s | tar zxv && chmod 755 oc'
+        component: maven       
